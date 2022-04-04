@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script src="./reactive.js"></script>
+</head>
+
+<body>
+
+    <script>
+
+        // 创建代理数据
+        const data = reactive({
+            foo : 'hello',
+            bar : 'world',
+            study : {
+                className : '高一',
+                sno : 9527,
+            }
+        });
+        console.log(data);
+        let foo, bar, sno;
+        // 写入依赖关系，可以是数据更新(计算属性，watch等)也可以是视图更新(重新渲染DOM)
+        effectWatch(() => {
+            foo = data.foo;
+            bar = data.bar;
+            // 内部元素 无法实现响应式更新，因为reactive只做了外层代理
+            sno = data.study.sno;
+        });
+        console.log(foo, bar, sno);
+
+
+    </script>
+</body>
+</html>

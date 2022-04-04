@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+
+    <input type="button" value="绿化" onclick="color='green'">
+    <input type="button" value="红花" onclick="color='red'">
+    <input type="button" value="兰花" onclick="color='blue'">
+
+    <script>
+        // 自定义语义化的事件，主要是感知变化，触发事件
+        // 例如：当一个变量值 改变时 触发响应的事件
+        // 设计颜色改变时的事件，当color变量值发生改变时 触发一些事件：
+        // 当color为green时，触发onGreen的事件
+        // 当color为red时，触发onRed的事件
+        // ...
+        // 这个过程就是在发布事件
+
+        // 可以通过`Object.defineProperty`来监听变量也就是window对象属性的变化
+        let _clr = "#fff"; // 存储属性值的中间变量
+
+        // 发布事件，就是监听`对象`(实体、事物)的变化 然后设置场景，触发回调函数
+        Object.defineProperty(window, "color", {
+            // 添加属性描述
+            // 添加拦截器
+            get() {
+                return _clr;
+            },
+            
+            set(val) {
+                // 添加监听，触发事件
+                switch (val) {
+                    case "green" : 
+                        onGreen();
+                        break;
+                    case "red" : 
+                        onRed();
+                        break;
+                    case "blue" : 
+                        onBlue();
+                        break;
+                } 
+                _clr = val;
+            }
+        })
+
+        // 订阅事件，就是定义`事件函数` - 回调函数
+        function onGreen() {
+            console.log("我被绿了...")
+        }
+
+        function onRed() {
+            console.log("我急眼了...")
+        }
+
+        function onBlue() {
+            console.log("我emo了...")
+        }
+
+        // 当修改值时  会触发red事件
+        color = "red";
+        console.log(color); // red
+    </script>
+</body>
+</html>

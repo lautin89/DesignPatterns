@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+    <script>
+
+        class Observer {
+
+            constructor(executor) {
+
+                this.message = {
+                    // type : callbacks,
+
+                }
+                // 如果有事件场景 在此定义
+                // ...
+                // 或者在外部设置，传入emit 用于执行回调函数
+                executor(this.emit);
+            }
+
+            emit = (type, ...event = []) => {
+                if (type in this.message) {
+                    for (let fn of this.message[type]) {
+                        fn.apply(this, event);
+                    }
+                }
+            }
+
+            on(type, fn) {
+                if (this.message[type]) {
+                    this.message[type].push(fn);
+                } else {
+                    this.message[type] = [fn];
+                }
+            }
+
+            off(type, fn) {
+                if (this.message[type]) {
+                    let pos = this.message[type].indexOf(fn);
+                    this.message[type].splice(pos, 1);
+                }
+            }
+
+            one(type, fn) {
+                this.on(type, (...args) => {
+                    fn.apply(this, args);
+                    this.off(type, fn);
+                });
+            }
+
+        }
+
+
+
+        const ob = new Observer(function (emit) {
+            // 中间变量 用来存储color的值 - 闭包
+            let _clr = '';
+            Object.defineProperty(window, 'color', {
+                set(newVal) {
+                    if (newVal == '') return;
+                    switch (newVal) {
+                        case 'green':
+                            emit('green', 1, 'a');
+                            _clr = newVal;
+                            break;
+                        case 'blue':
+                            emit('blue', 2, 'b');
+                            _clr = newVal;
+                            break;
+                        case 'yellow':
+                            emit('blue', 3, 'c');
+                            _clr = newVal;
+                            break;
+                    }
+                },
+                get() {
+                    return _clr;
+                }
+            });
+        });
+        
+        function f(value, msg) {
+            console.log('变为绿色了...', value, msg);
+        }
+
+        function g(value, msg) {
+            console.log('又变绿色了...', value, msg);
+        }
+
+        ob.one('green', f);
+
+        ob.one('green', g);
+
+        // ob.off('green', g);
+
+    </script>
+</body>
+
+</html>

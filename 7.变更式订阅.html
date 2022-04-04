@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>实现响应式</title>
+</head>
+
+<body>
+
+    <script>
+        /*
+        * 变更式订阅 就是 动态的收集依赖，依赖关系的动态订阅，同时在特定条件下自动触发执行，达到`响应式变更`，例如：
+        *      当读取一个依赖值时，则需要订阅依赖关系
+        *      当修改值时，自动触发订阅的事件，更新依赖
+        */
+
+        // 设置全局作用域的中间变量，用来传递依赖关系
+        let currentEffect;
+
+        class Dep {
+
+            #val;
+            constructor(val) {
+                // 以私有变量存储内部值
+                this.#val = val;
+                // 初始化事件池，以Set集合形式来存储，这样的好处有2点：
+                // 1. 可以直接去重，Set集合具有唯一性
+                // 2. 可以通过接口方法来快速操作数据
+                this.effects = new Set();
+            }
+
+            // 依赖的值 在内部 需要劫持 实现自动更新
+            get value() {
+                // 添加订阅当前依赖，已写入currentEffect
+                dep.depend();
+                return this.#val;
+            }
+
+            // 修改依赖的值，触发更新 - 发布事件
+            set value(newVal) {
+                this.#val = newVal;
+                // 执行依赖关系
+                dep.notice();
+            }
+
+            // 添加依赖 - 订阅方法
+            depend() {
+
+                if (currentEffect) {
+                    this.effects.add(currentEffect)
+                }
+
+            }
+
+            // 通知执行 - 
+            notice() {
+                this.effects.forEach(fn => {
+
+                    fn();
+                })
+            }
+
+        }
+
+        // 封装观测方法，一个工厂函数，动态添加多个依赖关系到事件池中
+        // 在以前是在订阅时传入，现在是在函数中借助中间变量
+        // 最终是在get时动态订阅依赖，watch就是引入依赖的
+        function effectWatch(effect) {
+
+            // 全局存储依赖关系
+            currentEffect = effect;
+
+            // 初始化执行一次，读取值时会自动订阅依赖
+            effect();
+
+            // // 无需手动添加订阅当前依赖，
+            // dep.depend();
+
+            // 清空依赖，避免干扰
+            currentEffect = null;
+
+        }
+
+        const dep = new Dep(1);
+        console.log(dep);
+
+        // 发布事件，当依赖改变时 触发更新
+        let b;
+        // 执行观测方法 添加一个依赖订阅
+        effectWatch(() => {
+            // 依赖的值 发生改变 则b更新
+            b = dep.value + 10;
+            console.log(`更新b`, b);
+        });
+
+        dep.value = 30;
+        dep.value = 40;
+
+        const targetMap = new Map;
+
+        function getDep(target, key) {
+            /*
+            * 添加依赖关系 - 存放在集合中{target -> depsMap -> dep}
+            */
+            let depsMap = targetMap.get(target);
+            // 读取target的所有依赖信息
+            if (!depsMap) {
+                depsMap = new Map;
+                targetMap.set(target, depsMap);
+            }
+            // 读取某个key的依赖信息
+            let dep = depsMap.get(key);
+            if (!dep) {
+                dep = new Dep();
+                depsMap.set(key, dep);
+            }
+
+            return dep;
+        }
+
+        // 响应式方法 使用通过proxy提取到key的值，然后利用get和set拦截，添加响应式依赖
+        // 该方法要和watch一起使用，先使用watch引入依赖，接下来proxy内部捆绑dep，
+        // 这里dep内部的value没有用，数据源自传入的初始值，proxy返回一个经过代理的副本
+        function reactive(target) {
+            // 返回代理对象，添加对每个属性的拦截
+            return new Proxy(target, {
+                get(target, key) {
+                    // debugger
+                    const dep = getDep(target, key);
+                    // 读取值时 订阅依赖关系
+                    dep.depend();
+                    return target[key];
+                },
+                set(target, key, newVal) {
+                    // debugger
+                    const dep = getDep(target, key);
+                    target[key] = newVal;
+                    // 更新值时 触发依赖执行，执行effetc，进入get 然后读取新的值 给关联变量
+                    dep.notice();
+                }
+            })
+        }
+
+        // 创建代理 并写入初始值，这里是将值交给代理 添加访问拦截，然后注入依赖
+        // 返回一个被代理后的对象，其中每个值关联一个依赖
+        const user = reactive({
+            age: 18,
+        });
+
+        let double;
+        effectWatch( () => {
+            double = user.age;
+            console.log(double);
+        });
+        
+
+
+    </script>
+
+</body>
+
+</html>

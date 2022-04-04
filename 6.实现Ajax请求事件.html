@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+    <script>
+
+        class Observe {
+
+            // 发布事件，或者执行时 接受参数
+            emit = (type, ...data) => {
+                if (type in this.message) {
+                    for (let fn of this.message[type]) {
+                        // 修改this并传入事件对象
+                        fn.apply(this, data);
+                    }
+                }
+            }
+
+            // 发布事件，ajax请求的事件
+            constructor(executor) {
+
+                // const message = {
+                //     // resolve : [],
+                //     // reject : [],
+                //     // pending : [],  
+                // }
+
+                // 创建事件池
+                this.message = {
+                    // ...
+                }
+
+                // 执行回调函数以发布事件 需要传入触发函数
+                // 一般是封装异步业务，为了避免执行过快时 还未来得及写入回调函数，可以将立即执行函数 放入微任务队列中
+                queueMicrotask(() => {
+                    executor(this.emit);
+                })
+
+            }
+
+            // 订阅指定类型的事件
+            on(type, fn) {
+                // 将方法 放入 事件池中，等通知 执行
+                if (type in this.message) {
+                    // 如果事件池中 没有该方法
+                    let pos = this.message[type].indexOf(fn);
+                    if (pos < 0) {
+                        this.message[type].push(fn);
+                    }
+                } else {
+                    // 新建该类型事件的方法集合
+                    this.message[type] = [fn];
+                }
+            }
+
+            off(type, fn) {
+                if (this.message[type]) {
+                    let pos = this.message[type].indexOf(fn);
+                    if (pos >= 0) {
+                        this.message[type].splice(pos, 1);
+                    }
+                }
+            }
+
+            one(type, fn) {
+                // 订阅1次，然后等执行完 之后 才能取消订阅
+                // 很多时候 如果要管理 回调函数，不要直接设置，而是放到函数里面去调用它
+                this.on(type, (...data) => {
+                    fn.apply(this, data);
+                    this.off(type, fn);
+                });
+            }
+
+        }
+
+        // 实例化对象时 初始化事件
+        const ajax = new Observe(function (emit) {
+            const xhr = new XMLHttpRequest;
+            
+            xhr.onreadystatechange = function () {
+                // debugger
+                // console.log('inner', xhr.readyState);
+                // 请求完成
+                if (xhr.readyState == 4) {
+                    if (xhr.status == 200) {
+                        // 成功：resolve
+                        // 通知成功的订阅，触发执行
+                        let result = xhr.responseText;
+                        emit('success', result);
+                    } else {
+                        // 失败：reject
+                        // 通知失败的订阅，触发执行
+                        let error = xhr.statusText;
+                        // let error = "哎呀，失败了呀"
+                        emit('error', error);
+                    }
+                } else { // 过程中：pending
+                    // console.log(xhr.readyState);
+                    // 通知pending的订阅，触发执行
+                    emit('pendding', xhr.readyState);
+                }
+            }
+
+            xhr.open("get", "http://180.76.52.106/api/goods.php?length=5");
+
+            xhr.send(null);
+        });
+
+        // pendding执行一次即可，需要将回调函数独立出来，但还是不行，这很奇怪，状态改变太快？
+        function loading(event) {
+            console.log(event);
+            const img = new Image;
+            img.src = 'loading.gif';
+            document.body.appendChild(img);
+        }
+
+        ajax.one("pendding", loading);
+
+        ajax.on("success", function (event) {
+            const result = JSON.parse(event);
+            console.log(result);
+
+        });
+
+        ajax.on("error", function (err) {
+            console.log(err);
+
+        });
+
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script src="./node_modules/jquery/dist/jquery.min.js"></script>
+</head>
+<body>
+    <script>
+        
+        /* 
+        * `发布/订阅`模型，模拟了js事件处理的机制，就其，后来总结成一套设计模式 -  观察者
+        * 在标准事件模型中，使用了事件池的处理方案：
+        * 1. 事件池是一个容器，存放了方法的集合，执行时遍历他们
+        * 2. 事件池中的方法是不重复的，在添加-订阅事件时 会去重
+        * 3. 事件池中的方法是有序执行，在添加-push 保持添加时的顺序
+        */ 
+
+        function f() {
+            console.log('f....')
+        }
+
+        function g() {
+            console.log('g....');
+        }
+
+        // 使用addEventListener订阅多个事件，此时事件池中 有2个方法
+        // document.addEventListener("click", f);
+        // document.addEventListener("click", g);
+        // document.addEventListener("click", g);
+
+        // $(document).on("click", f);
+        // $(document).on("click", g);
+
+        // $(document).on("click", function () {
+        //     f();
+        //     g();
+        // })
+
+        // 创建事件池，
+        const ponds = $.Callbacks();
+        // 向事件池中添加方法，操作更灵活
+        ponds.add(f);
+        ponds.add(g);
+
+        // 还有其他方法，例如 remove等...
+
+        // jquery支持事件池方式的事件绑定
+        $(document).on("click", function () {
+            // 通知事件池 执行里面的方法
+            ponds.fire();
+        })
+
+        // jquery的事件池 没有做去重
+        ponds.add(g);
+        
+    </script>
+</body>
+</html>

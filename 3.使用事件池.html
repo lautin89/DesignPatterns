@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+    <head>
+        <meta charset="UTF-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Document</title>
+    </head>
+
+    <body>
+
+        <input type="button" value="绿化" onclick="color='green'">
+        <input type="button" value="红花" onclick="color='red'">
+        <input type="button" value="兰花" onclick="color='blue'">
+
+        <script>
+
+            // 可以通过Object.defineProperty来监听变量也就是window对象属性的变化
+            let _clr = "#fff"; // 存储属性值的中间变量
+
+            // 创建事件池，就是方法集合
+            const _events = {
+                // 事件名 ： 方法
+                // "green" : [f, g, h]
+            }
+
+            // 发布事件，就是监听`对象`(实体、事物)的变化 然后设置场景，触发回调函数
+            Object.defineProperty(window, "color", {
+                // 添加属性描述
+                // 添加拦截器
+                get() {
+                    return _clr;
+                },
+                set(val) {
+                    // 添加监听，触发事件
+                    switch (val) {
+                        case "green":
+                            // 通知订阅者 执行指定类型的事件
+                            notify("green");
+                            break;
+                        case "red":
+                            notify("red");
+                            break;
+                        case "blue":
+                            notify("blue");
+                            break;
+                    }
+                    _clr = val;
+                }
+            })
+
+            // 执行事件池中的方法
+            function notify(type) {
+                if (type in _events) { // green
+                    // 遍历指定类型事件的方法集合
+                    for (let fn of _events[type]) {
+                        fn();
+                    }
+                }
+            }
+
+
+            // 订阅事件，要通过统一的方法，放入事件池中
+            function on(type, callback) {
+                // 如果是第一次 订阅事件
+                if (!_events[type]) {
+                    // 创建该类型事件的方法集合
+                    _events[type] = [callback];
+                } else {
+                    // 先检测是否已有该方法
+                    if (!_events[type].includes(callback)) {
+                        // 向事件集合中 追加方法
+                        _events[type].push(callback);
+                    }
+                }
+            }
+
+            // 取消订阅，指定某类型的具体事件函数
+            function off(type, fn) {
+                if (_events[type]) {
+                    // 从指定类型集合中删除该fn
+                    let pos = _events[type].indexOf(fn);
+                    if (pos >= 0) { // 找到则删除
+                        _events[type].splice(pos, 1);
+                    }
+                }
+            }
+
+            function f() {
+                console.log('我绿化了...')
+            }
+
+            function g() {
+                console.log('我清新了...')
+            }
+
+            // 订阅，不是立即执行，改变时才执行
+            on("green", f)
+
+            // 订阅多个 只会绑定一个
+            on("green", g)
+            on("green", g)
+
+            // 移除事件
+            off("green", g)
+
+        </script>
+    </body>
+
+</html>

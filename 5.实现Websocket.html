@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+    <script>
+
+        class Observe {
+
+            constructor(executor = null) {
+                // 初始化
+                this.message = {
+                    // type : callbacks,
+
+                }
+
+                if (executor && executor instanceof Function) {
+                    executor(this.emit);
+                }
+            }
+
+            // 通知并自动更新
+            emit = (type, ...event) => {
+                if (type in this.message) {
+                    for (let fn of this.message[type]) {
+                        // 执行该回调函数
+                        fn.apply(this, event);
+                    }
+                }
+            }
+
+            // 订阅不同类型的事件
+            on(type, fn) {
+                if (type in this.message) {
+                    let pos = this.message[type].indexOf(fn);
+                    // 去除重复
+                    if (pos < 0) {
+                        this.message[type].push(fn);
+                    }
+                } else {
+                    this.message[type] = [fn];
+                }
+            }
+
+            // 删除指定类型的事件
+            off(type, fn) {
+                if (type in this.message) {
+                    let pos = this.message[type].indexOf(fn);
+                    this.message[type].splice(pos, 1);
+                }
+            }
+
+            one(type, fn) {
+                this.on(type, (...data) => {
+                    // 执行一次事件
+                    fn.apply(this, data);
+                    // 移除事件
+                    this.off(type, fn);
+                })
+            }
+
+        }
+
+        const ws = new Observe(function (emit) {
+            const ws = new WebSocket('ws://121.40.165.18:8800');
+            ws.onopen = function () {
+                emit('open', ws);
+            }
+
+            ws.onmessage = function (event) {
+                emit('message', event.data);
+            }
+
+            ws.onclose = function () {
+                emit('close');
+            }
+        });
+
+        ws.on('open', function (event) {
+            event.send('hello world');
+            console.log('open...');
+        });
+
+        ws.on('message', function (event) {
+            console.log('message...');
+        });
+
+        ws.on('message', function (event) {
+            console.log(event);
+        });
+
+        ws.on('close', function () {
+            console.log('close...');
+        });
+    </script>
+</body>
+
+</html>
