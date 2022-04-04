@@ -1,2 +1,2 @@
 # DesignPatterns
-javascript常用设计模式
+javascript常用设计模式之发布订阅模型
